@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">    
+    <title> Prueba de Google App Script </title>    
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <!-- Vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
+  </head>
+  <body>
+    
+    <div id="app" class="container">
+        
+        <h1> Menú </h1>
+        
+        <table class="table">
+            <thead>
+                <tr>
+                    <th> Nombre </th>
+                    <th> Descripción </th>
+                    <th> Categoría </th>
+                    <th> </th>
+                </tr>
+            </thead>
+            <tbody>                                
+                <tr>
+                    <td>
+                        <input type="text" class="form-control" placeholder="Ingrese el nombre" v-model="item_menu_temp.nombre" />
+                    </td>
+                    <td>
+                        <input type="text" class="form-control" placeholder="Ingrese una descripción" v-model="item_menu_temp.descripcion" />
+                    </td>
+                    <td>
+                        <select class="form-control" v-model="item_menu_temp.categoria">
+                            <option value=""> Ingrese la categoría </option>
+                            <option v-for="c in categorias" v-bind:value="c[0]"> {{ c[0] }} </option>
+                        </select>
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-primary" v-on:click="addItemMenu()" v-bind:disabled="!validarItemMenu(item_menu_temp)"> Agregar </button>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3">
+                        <input type="text" class="form-control" placeholder="Buscar" v-model="texto_busqueda" />
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-secondary" v-on:click="getMenuFiltrado()"> Buscar </button>
+                        <button type="button" class="btn btn-secondary" v-on:click="getMenu()"> Traer todo </button>
+                    </td>
+                </tr>
+                <tr v-for="item in menu">
+                    <td>
+                        <input type="text" class="form-control" placeholder="Ingrese el nombre" v-model="item.nombre" />
+                    </td>
+                    <td>
+                        <input type="text" class="form-control" placeholder="Ingrese una descripción" v-model="item.descripcion" />
+                    </td>
+                    <td>
+                        <select class="form-control" v-model="item.categoria">
+                            <option value=""> Ingrese la categoría </option>
+                            <option v-for="c in categorias" v-bind:value="c[0]"> {{ c[0] }} </option>
+                        </select>
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-primary" v-on:click="updateItemMenu(item)" v-bind:disabled="!validarItemMenu(item)"> Modificar </button>
+                        <button type="button" class="btn btn-danger" v-on:click="deleteItemMenu(item)"> Eliminar </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        
+    </div>
+    
+    <script>
+        
+        new Vue({
+            el: '#app',            
+            data: function(){
+                return {
+                    categorias: [],
+                    item_menu_temp: {
+                        nombre: '',
+                        descripcion: '',
+                        categoria: ''
+                    },
+                    menu: [],
+                    texto_busqueda: ''
+                }
+            },
+            created: function(){
+                this.getCategorias();
+            },
+            methods: {
+                getCategorias: function(){
+                    let that = this;
+                    google.script.run.withSuccessHandler(function(categorias){
+                        that.categorias = categorias;
+                    }).getCategorias();
+                },
+                addItemMenu: function(){
+                    let that = this;
+                    google.script.run.withSuccessHandler(function(){
+                        alert("El registro se ha guardado en el menú.");
+                        that.item_menu_temp.nombre = "";
+                        that.item_menu_temp.descripcion = "";
+                        that.item_menu_temp.categoria = "";
+                    }).addItemMenu(that.item_menu_temp);
+                },
+                validarItemMenu: function(p_item){
+                    return (
+                        p_item.nombre.split(" ").join("") != "" &&
+                        p_item.descripcion.split(" ").join("") != "" &&
+                        p_item.categoria.split(" ").join("") != ""
+                    );
+                },
+                getMenu: function(){
+                    let that = this;
+                    that.menu = [];
+                    google.script.run.withSuccessHandler(function(menu){
+                        that.menu = [];
+                        for(let i = 0; i < menu.length; i++)
+                        {
+                            that.menu.push({
+                                ID:  menu[i][0],
+                                nombre: menu[i][1],
+                                descripcion: menu[i][2],
+                                categoria: menu[i][3]
+                            });
+                        }
+                    }).getMenu();
+                },
+                getMenuFiltrado: function(){
+                    let that = this;
+                    that.menu = [];
+                    google.script.run.withSuccessHandler(function(menu_filtrado){
+                        that.menu = [];
+                        if(menu_filtrado.length > 0){
+                            for(let i = 0; i < menu_filtrado.length; i++)
+                            {
+                                that.menu.push({
+                                    ID:  menu_filtrado[i][0],
+                                    nombre: menu_filtrado[i][1],
+                                    descripcion: menu_filtrado[i][2],
+                                    categoria: menu_filtrado[i][3]
+                                });
+                            }
+                         }else{
+                             alert('La búsqueda no ha traído resultado');
+                         }
+                    }).getMenuFiltrado(that.texto_busqueda);
+                },
+                updateItemMenu: function(p_item){
+                    google.script.run.withSuccessHandler(function(){
+                        alert("El registro se ha guardado en el menú.");
+                    }).updateItemMenu(p_item);
+                },
+                deleteItemMenu: function(p_item){
+                    let that = this;
+                    if(confirm("Está segura/o que desea eliminar este ítem?")){
+                       google.script.run.withSuccessHandler(function(){
+                           alert("El registro se ha eliminado del menú.");
+                           that.getMenu();
+                       }).deleteItemMenu(p_item);
+                    }
+                }
+            }
+        });   
+        
+    </script>
+    
+    
+  </body>
+</html>
